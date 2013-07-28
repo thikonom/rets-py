@@ -9,7 +9,6 @@ class Rets(object):
 
         response = None
         try:
-
             response = requests.get(url=login_url, auth=(username, password)) 
         except Exception as e:
             print 'Error logging into RETS Server: {error}'.format(error=repr(e))
