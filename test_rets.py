@@ -12,23 +12,30 @@ class RetsUnitTest(unittest.TestCase):
         self.password  = "1234"
 
     def test_successful_login(self):
-        httpretty.enable()
-        mock_response = """<RETS ReplyCode="0" ReplyText="V2.0.4 : Success">
-                            MemberName=Elizabeth A Davis 
-                            User=272, AGENT:BROKER OFFICE:OFFICE, 50, 272
-                            Broker=MRIS,1
-                            MetadataVersion=1.2.200
-                            MinMetadataVersion=1.1.1
-                            OfficeList=MRIS;1
-                            TimeoutSeconds=1800
-                            Search=http://cornerstone.mris.com:6103/platinum/search
-                            GetObject=http://cornerstone.mris.com:6103/platinum/getobject
-                            Login=http://cornerstone.mris.com:6103/platinum/login
-                            GetMetadata=http://cornerstone.mris.com:6103/platinum/getmetadata
-                            ChangePassword=http://cornerstone.mris.com:6103/platinum/changepassword
-                            Logout=http://cornerstone.mris.com:6103/platinum/logout
-                            </RETS>"""
+        mock_response = """
+            <RETS ReplyCode="0" ReplyText="Operation Successful">
+            <RETS-RESPONSE>
+            MemberName=Retspy
+            User=Retspy,0,Syndicator,Retspy
+            Broker=NA
+            MetadataVersion=1.00.00041
+            MetadataTimestamp=2013-08-09T21:36:19
+            MinMetadataTimestamp=2013-08-09T21:36:19
+            TimeoutSeconds=1800000
+            Action=/rets/action
+            GetMetadata=/rets/getMetadata
+            GetObject=/rets/getObject
+            Login=/rets/login
+            Logout=/rets/logout
+            X-PostObject=/rets/postObject
+            Search=/rets/search
+            X-Selector=/rets/selector
+            Update=/rets/update
+            </RETS-RESPONSE>
+            </RETS>
+            """
 
+        httpretty.enable()
         httpretty.register_uri(httpretty.GET, self.login_url, body=mock_response)
 
         client = Rets()
@@ -38,21 +45,29 @@ class RetsUnitTest(unittest.TestCase):
         httpretty.disable()
 
     def test_unable_to_login(self):
-        mock_response = """<RETS ReplyCode="0" ReplyText="V2.0.4 : Success">
-                            MemberName=Elizabeth A Davis 
-                            User=272, AGENT:BROKER OFFICE:OFFICE, 50, 272
-                            Broker=MRIS,1
-                            MetadataVersion=1.2.200
-                            MinMetadataVersion=1.1.1
-                            OfficeList=MRIS;1
-                            TimeoutSeconds=1800
-                            Search=http://cornerstone.mris.com:6103/platinum/search
-                            GetObject=http://cornerstone.mris.com:6103/platinum/getobject
-                            Login=http://cornerstone.mris.com:6103/platinum/login
-                            GetMetadata=http://cornerstone.mris.com:6103/platinum/getmetadata
-                            ChangePassword=http://cornerstone.mris.com:6103/platinum/changepassword
-                            Logout=http://cornerstone.mris.com:6103/platinum/logout
-                            </RETS>"""
+        mock_response = """
+            <RETS ReplyCode="0" ReplyText="Operation Successful">
+            <RETS-RESPONSE>
+            MemberName=Retspy
+            User=Retspy,0,Syndicator,Retspy
+            Broker=NA
+            MetadataVersion=1.00.00041
+            MetadataTimestamp=2013-08-09T21:36:19
+            MinMetadataTimestamp=2013-08-09T21:36:19
+            TimeoutSeconds=1800000
+            Action=/rets/action
+            GetMetadata=/rets/getMetadata
+            GetObject=/rets/getObject
+            Login=/rets/login
+            Logout=/rets/logout
+            X-PostObject=/rets/postObject
+            Search=/rets/search
+            X-Selector=/rets/selector
+            Update=/rets/update
+            </RETS-RESPONSE>
+            </RETS>
+            """
+
         httpretty.enable()
         httpretty.register_uri(httpretty.GET, self.login_url, body=mock_response)
 
@@ -64,4 +79,3 @@ class RetsUnitTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

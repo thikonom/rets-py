@@ -3,9 +3,9 @@ import requests
 class Rets(object):
 
     def login(self, login_url, username, password):
-        assert login_url != '', 'Login url is empty'
-        assert username  != '', 'Username is empty'
-        assert password  != '', 'Password is empty'
+        assert login_url, 'Login url cannot be empty'
+        assert username,  'Username cannot be empty'
+        assert password,  'Password cannot be empty'
 
         response = None
         try:
