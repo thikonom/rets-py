@@ -7,7 +7,6 @@ import httpretty
 class RetsUnitTest(unittest.TestCase):
 
     def setUp(self):
-        self.login_url = "http://www.rets.com/"
         self.username  = "admin"
         self.password  = "1234"
 
@@ -36,12 +35,33 @@ class RetsUnitTest(unittest.TestCase):
             """
 
         httpretty.enable()
-        httpretty.register_uri(httpretty.GET, self.login_url, body=mock_response)
+        httpretty.register_uri(httpretty.GET,'http://www.retserver.com/login', body=mock_response)
 
         client = Rets()
-        response = client.login(self.login_url, self.username, self.password)
+        response = client.connect('http://www.retserver.com/login', self.username, self.password)
 
-        self.assertEqual(response.text, mock_response)
+        self.assertEqual(response, mock_response)
+        self.assertEqual(client.server_info, {
+            'BROKER': 'NA',
+            'MEMBERNAME': 'Retspy',
+            'METADATATIMESTAMP': '2013-08-09T21:36:19',
+            'METADATAVERSION': '1.00.00041',
+            'MINMETADATATIMESTAMP': '2013-08-09T21:36:19',
+            'TIMEOUTSECONDS': '1800000',
+            'USER': 'Retspy,0,Syndicator,Retspy'
+        })
+        self.assertEqual(client.capability_urls, {
+           'ACTION': '/rets/action',
+           'GETMETADATA': '/rets/getMetadata',
+           'GETOBJECT': '/rets/getObject',
+           'LOGIN': '/rets/login',
+           'LOGOUT': '/rets/logout',
+           'SEARCH': '/rets/search',
+           'UPDATE': '/rets/update',
+           'X-POSTOBJECT': '/rets/postObject',
+           'X-SELECTOR': '/rets/selector'
+        })  
+
         httpretty.disable()
 
     def test_unable_to_login(self):
@@ -69,11 +89,15 @@ class RetsUnitTest(unittest.TestCase):
             """
 
         httpretty.enable()
-        httpretty.register_uri(httpretty.GET, self.login_url, body=mock_response)
+        httpretty.register_uri(httpretty.GET, "http://www.wrongurl.com", status=401)
 
         client = Rets()
 
-        self.assertRaises(Exception, client.login("http://www.wrongurl.com", self.username, self.password))
+        response = client.connect("http://www.wrongurl.com", self.username, self.password)
+        self.assertEqual(response, False)
+        self.assertEqual(client.capability_urls, {})
+        self.assertEqual(client.server_info, {})
+
         httpretty.disable()
 
 
