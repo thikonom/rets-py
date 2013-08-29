@@ -71,9 +71,3 @@ class Rets(object):
                     self.server_info[key] = value
 
         return response.text
-
-
-if __name__ == '__main__':
-    r = Rets()
-    response = r.connect("http://bridge-rets.mlspin.com:6103/rets/login", "WallStreetJournal", "488ac2")
-    print(repr(response))
