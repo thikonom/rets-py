@@ -1,7 +1,9 @@
-from lxml import etree
 from StringIO import StringIO
+from urllib import urlencode
 
+from lxml import etree
 import requests
+
 
 
 class Rets(object):
@@ -25,6 +27,7 @@ class Rets(object):
                'User-Agent':   'Rets-py/1.0'}
 
     def __init__(self, **kwargs):
+        self.logged_in = False
         self.capability_urls = {}
         self.server_info = {}
         params = kwargs or {}
@@ -46,10 +49,15 @@ class Rets(object):
         if response.status_code != 200:
             return False
 
+        self.logged_in = True
+        self.username = username
+        self.password = password
+
         data = []
         #TODO add RetsException
         if response.text:
             tree = etree.parse(StringIO(response.text))
+            #TODO parse response for rets_version 1.0
             root = tree.xpath('//RETS-RESPONSE')
             if not root:
                 raise Exception("Is not a RETS server.")
@@ -71,3 +79,28 @@ class Rets(object):
                     self.server_info[key] = value
 
         return response.text
+
+    def get_metadata(self, resource, klass):
+        assert self.logged_in, 'You are not logged in'
+
+        metadata_url = self.capability_urls.get('GETMETADATA') 
+        assert metadata_url, 'No url for capability GetMetadata found'
+
+        metadata_url += urlencode({'Type': 'METADATA-LOOKUP_TYPE',
+                                   'ID': '',
+                                   'Format': 'STANDARD-XML'})
+        return self.get_metadata_table(resource, klass)
+
+    #def get_metadata_table(self, resource, klass):
+
+    #    assert resource, 'Resource parameter is required in get_metadata() request'
+    #    assert klass, 'Class parameter is required in get_metadata() request'
+
+    #    metadata_url = self.capability_urls['GETMETADATA']
+    #    metadata_url += urlencode({'Type': 'METADATA-LOOKUP_TYPE',
+    #                               'ID': '',
+    #                               'Format': 'STANDARD-XML'})
+
+    #    try:
+    #        response = requests.get(url=metadata_url, auth=(self.username, self.password), header=self.headers)
+    #    except Exception as e:
