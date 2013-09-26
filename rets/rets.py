@@ -37,7 +37,7 @@ class Rets(object):
         self.headers = self.default_headers
         if headers:
             self.headers.update(headers)
-        self._logged_in = False
+        self.__logged_in = False
 
     def login(self, login_url, username, password):
         assert login_url != '', 'Login url cannot be empty'
@@ -65,7 +65,7 @@ class Rets(object):
 
         self._set_capability_urls(response)
 
-        self.loggedin = True
+        self.__logged_in = True
 
         return True
 
