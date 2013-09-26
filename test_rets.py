@@ -64,7 +64,7 @@ class RetsUnitTest(unittest.TestCase):
 
         httpretty.disable()
 
-    def test_unable_to_login(self):
+    def test_unauthorized_login(self):
         mock_response = """
             <RETS ReplyCode="0" ReplyText="Operation Successful">
             <RETS-RESPONSE>
@@ -89,14 +89,14 @@ class RetsUnitTest(unittest.TestCase):
             """
 
         httpretty.enable()
-        httpretty.register_uri(httpretty.GET, "http://www.wrongurl.com", status=401)
+        httpretty.register_uri(httpretty.GET, "http://www.wrongurl.com/rets/login", status=401)
 
         client = rets.Rets()
 
-        with self.assertRaises(AssertionError):
-            client.login("http://www.wrongurl.com", self.username, self.password)
-            self.assertEqual(client.capability_urls, {})
-            self.assertEqual(client.server_info, {})
+        response = client.login("http://www.wrongurl.com/rets/login", self.username, self.password)
+        self.assertEqual(response, False)
+        self.assertEqual(client.capability_urls, {})
+        self.assertEqual(client.server_info, {})
 
         httpretty.disable()
 

@@ -48,16 +48,15 @@ class Rets(object):
         self.server_hostname = uri_portions.hostname
         self.server_port = uri_portions.port or 80
         self.server_protocol = uri_portions.scheme
-
-        self.capability_urls['LOGIN'] = uri_portions.path
-        
+    
         self.username = username
         self.password = password
 
-        response = self.dorequest(self.capability_urls['LOGIN'])
+        action = uri_portions.path
+        response = self.dorequest(action)
 
         if response.status_code == 401:
-            response = self.dorequest(self.capability_urls['LOGIN'])
+            response = self.dorequest(action)
             if response.status_code == 401:
                 return False
 
