@@ -1,9 +1,12 @@
+import urlparse
+from urllib.parse import urlencode
 from StringIO import StringIO
-from urllib import urlencode
 
 from lxml import etree
 import requests
 
+from exceptions import RetsException, RetsHTTPException
+from utils import assert_successful_response
 
 
 class Rets(object):
@@ -23,84 +26,86 @@ class Rets(object):
         "GETPAYLOADLIST": 1
     }
 
-    headers = {'RETS-Version': 'RETS/1.5',
-               'User-Agent':   'Rets-py/1.0'}
+    DEFAULT_HEADERS = {'RETS-Version': 'RETS/1.5',
+                       'User-Agent':   'Rets-py/1.0'}
 
     def __init__(self, **kwargs):
-        self.logged_in = False
         self.capability_urls = {}
         self.server_info = {}
         params = kwargs or {}
         headers = params.get('headers')
         if headers:
-            self.headers.update(headers)
+            self.headers = self.DEFAULT_HEADERS.update(headers)
+        self._logged_in = False
 
-    def connect(self, login_url, username, password):
-        assert login_url, 'Login url cannot be empty'
-        assert username,  'Username cannot be empty'
-        assert password,  'Password cannot be empty'
+    def login(self, login_url, username, password):
+        assert login_url != '', 'Login url cannot be empty'
+        assert username !='',   'Username cannot be empty'
+        assert password !='',   'Password cannot be empty'
 
-        response = None
-        try:
-            response = requests.get(url=login_url, auth=(username, password), headers=self.headers) 
-        except Exception as e:
-            print 'Error logging into RETS Server: {error}'.format(error=repr(e))
+        url_bits = urlparse.urlparse(login_url)
+        self.server_hostname = url_bits.hostname
+        self.server_port = url_bits.port or '80'
+        self.server_protocol = url_bits.scheme
 
-        if response.status_code != 200:
-            return False
-
-        self.logged_in = True
+        self.capability_urls['Login'] = url_bits.path
+        
         self.username = username
         self.password = password
 
-        data = []
-        #TODO add RetsException
-        if response.text:
-            tree = etree.parse(StringIO(response.text))
-            #TODO parse response for rets_version 1.0
-            root = tree.xpath('//RETS-RESPONSE')
-            if not root:
-                raise Exception("Is not a RETS server.")
+        response = self.dorequest(self.capability_urls['Login'])
 
-            for line in root[0].text.split('\n'):
+        if response.status_code == 401:
+            response = dorequest()
+            if response.status_code == 401:
+                return false
 
-                if not line.strip():
-                    continue
-                try:
-                    key, value = line.split('=')
-                except:
-                    raise Exception('Invalid key value pair')
+        assert_successful_response(response, login_url)
 
-                key = key.strip().upper()
-                value = value.strip()
-                if key in self.capabilities or key.startswith('X-'):
-                    self.capability_urls[key] = value
-                else:
-                    self.server_info[key] = value
+        self._set_capability_urls(response)
 
-        return response.text
+        self.loggedin = True
 
-    def get_metadata(self, resource, klass):
-        assert self.logged_in, 'You are not logged in'
+        return True
 
-        metadata_url = self.capability_urls.get('GETMETADATA') 
-        assert metadata_url, 'No url for capability GetMetadata found'
+    def _set_capability_urls(response):
+        tree = etree.parse(StringIO(response.text))
+        root = tree.xpath('//RETS-RESPONSE')
+        if not root:
+            raise RetsException("Is not a RETS server.")
 
-        metadata_url += urlencode({'Type': 'METADATA-LOOKUP_TYPE',
-                                   'ID': '',
-                                   'Format': 'STANDARD-XML'})
-        return self.get_metadata_table(resource, klass)
+        for line in root[0].text.split('\n'):
 
-    #def get_metadata_table(self, resource, klass):
+            if not line.strip():
+                continue
+            try:
+                key, value = line.split('=')
+            except:
+                raise RetsException('Invalid key value pair')
 
-    #    assert resource, 'Resource parameter is required in get_metadata() request'
-    #    assert klass, 'Class parameter is required in get_metadata() request'
+            key = key.strip().upper()
+            value = value.strip()
+            if key in self.capabilities or key.startswith('X-'):
+                self.capability_urls[key] = value
+            else:
+                self.server_info[key] = value
 
-    #    metadata_url = self.capability_urls['GETMETADATA']
-    #    metadata_url += urlencode({'Type': 'METADATA-LOOKUP_TYPE',
-    #                               'ID': '',
-    #                               'Format': 'STANDARD-XML'})
+    def dorequest(self, action, *args):
+        assert action != '', 'Action cannot be empty'
+       
+        parse_result = urlparse.urlparse(action)  
+        if not parse_result:
+            # action has a relative path
+            request_url = self.server_protocol + '://' + self.server_hostname + ':' + self.server_port + action
+        else:
+            request_url = action
 
-    #    try:
-    #        response = requests.get(url=metadata_url, auth=(self.username, self.password), header=self.headers)
-    #    except Exception as e:
+        request_args = ''
+        if params:
+            request_args = urlencode(request_args)
+
+        request_headers = ''
+        for k,v in request_headers.iteritems():
+            request_headers += "{key}:{value}\r\n".format(k,v) 
+
+        response = requests.get(url=request_url, auth=(self.username, self.password), headers=request_headers)
