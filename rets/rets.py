@@ -1,12 +1,12 @@
-import urlparse
-from urllib.parse import urlencode
+from urlparse import urlparse
+from urllib import urlencode
 from StringIO import StringIO
 
 from lxml import etree
 import requests
 
-from exceptions import RetsException, RetsHTTPException
-from utils import assert_successful_response
+from .exceptions import RetsException, RetsHTTPException
+from .utils import assert_successful_response
 
 
 class Rets(object):
@@ -26,7 +26,7 @@ class Rets(object):
         "GETPAYLOADLIST": 1
     }
 
-    DEFAULT_HEADERS = {'RETS-Version': 'RETS/1.5',
+    default_headers = {'RETS-Version': 'RETS/1.5',
                        'User-Agent':   'Rets-py/1.0'}
 
     def __init__(self, **kwargs):
@@ -34,8 +34,9 @@ class Rets(object):
         self.server_info = {}
         params = kwargs or {}
         headers = params.get('headers')
+        self.headers = self.default_headers
         if headers:
-            self.headers = self.DEFAULT_HEADERS.update(headers)
+            self.headers.update(headers)
         self._logged_in = False
 
     def login(self, login_url, username, password):
@@ -43,22 +44,22 @@ class Rets(object):
         assert username !='',   'Username cannot be empty'
         assert password !='',   'Password cannot be empty'
 
-        url_bits = urlparse.urlparse(login_url)
-        self.server_hostname = url_bits.hostname
-        self.server_port = url_bits.port or '80'
-        self.server_protocol = url_bits.scheme
+        uri_portions = urlparse(login_url)
+        self.server_hostname = uri_portions.hostname
+        self.server_port = uri_portions.port or 80
+        self.server_protocol = uri_portions.scheme
 
-        self.capability_urls['Login'] = url_bits.path
+        self.capability_urls['LOGIN'] = uri_portions.path
         
         self.username = username
         self.password = password
 
-        response = self.dorequest(self.capability_urls['Login'])
+        response = self.dorequest(self.capability_urls['LOGIN'])
 
         if response.status_code == 401:
-            response = dorequest()
+            response = self.dorequest(self.capability_urls['LOGIN'])
             if response.status_code == 401:
-                return false
+                return False
 
         assert_successful_response(response, login_url)
 
@@ -68,7 +69,7 @@ class Rets(object):
 
         return True
 
-    def _set_capability_urls(response):
+    def _set_capability_urls(self, response):
         tree = etree.parse(StringIO(response.text))
         root = tree.xpath('//RETS-RESPONSE')
         if not root:
@@ -93,19 +94,18 @@ class Rets(object):
     def dorequest(self, action, *args):
         assert action != '', 'Action cannot be empty'
        
-        parse_result = urlparse.urlparse(action)  
-        if not parse_result:
-            # action has a relative path
-            request_url = self.server_protocol + '://' + self.server_hostname + ':' + self.server_port + action
+        uri_portions = urlparse(action)  
+        if not uri_portions.netloc:
+            # action is provided as a relative path
+            request_url = self.server_protocol + '://' + self.server_hostname + ':' + str(self.server_port) + action
         else:
+            # action is provided as an absolute path
             request_url = action
 
         request_args = ''
-        if params:
-            request_args = urlencode(request_args)
+        if args:
+            request_args = urlencode(args)
 
-        request_headers = ''
-        for k,v in request_headers.iteritems():
-            request_headers += "{key}:{value}\r\n".format(k,v) 
-
-        response = requests.get(url=request_url, auth=(self.username, self.password), headers=request_headers)
+        response = requests.get(url=request_url, auth=(self.username, self.password), headers=self.headers)
+        
+        return response

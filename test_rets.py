@@ -1,4 +1,4 @@
-from rets import *
+import rets
 
 import unittest
 
@@ -35,12 +35,12 @@ class RetsUnitTest(unittest.TestCase):
             """
 
         httpretty.enable()
-        httpretty.register_uri(httpretty.GET,'http://www.retserver.com/login', body=mock_response)
+        httpretty.register_uri(httpretty.GET,'http://www.retserver.com/rets/login', body=mock_response)
 
-        client = Rets()
-        response = client.connect('http://www.retserver.com/login', self.username, self.password)
+        client = rets.Rets()
+        response = client.login('http://www.retserver.com/rets/login', self.username, self.password)
 
-        self.assertEqual(response, mock_response)
+        self.assertEqual(response, True)
         self.assertEqual(client.server_info, {
             'BROKER': 'NA',
             'MEMBERNAME': 'Retspy',
@@ -91,12 +91,12 @@ class RetsUnitTest(unittest.TestCase):
         httpretty.enable()
         httpretty.register_uri(httpretty.GET, "http://www.wrongurl.com", status=401)
 
-        client = Rets()
+        client = rets.Rets()
 
-        response = client.connect("http://www.wrongurl.com", self.username, self.password)
-        self.assertEqual(response, False)
-        self.assertEqual(client.capability_urls, {})
-        self.assertEqual(client.server_info, {})
+        with self.assertRaises(AssertionError):
+            client.login("http://www.wrongurl.com", self.username, self.password)
+            self.assertEqual(client.capability_urls, {})
+            self.assertEqual(client.server_info, {})
 
         httpretty.disable()
 
