@@ -5,7 +5,7 @@ from StringIO import StringIO
 from lxml import etree
 import requests
 
-from .exceptions import RetsException, RetsHTTPException
+from .exceptions import RetsException
 from .utils import assert_successful_response
 
 
@@ -41,14 +41,14 @@ class Rets(object):
 
     def login(self, login_url, username, password):
         assert login_url != '', 'Login url cannot be empty'
-        assert username !='',   'Username cannot be empty'
-        assert password !='',   'Password cannot be empty'
+        assert username != '',   'Username cannot be empty'
+        assert password != '',   'Password cannot be empty'
 
         uri_portions = urlparse(login_url)
         self.server_hostname = uri_portions.hostname
         self.server_port = uri_portions.port or 80
         self.server_protocol = uri_portions.scheme
-    
+
         self.username = username
         self.password = password
 
@@ -92,11 +92,12 @@ class Rets(object):
 
     def dorequest(self, action, *args):
         assert action != '', 'Action cannot be empty'
-       
-        uri_portions = urlparse(action)  
+
+        uri_portions = urlparse(action)
         if not uri_portions.netloc:
             # action is provided as a relative path
-            request_url = self.server_protocol + '://' + self.server_hostname + ':' + str(self.server_port) + action
+            request_url = self.server_protocol + '://' + self.server_hostname \
+                          + ':' + str(self.server_port) + action
         else:
             # action is provided as an absolute path
             request_url = action
@@ -105,6 +106,8 @@ class Rets(object):
         if args:
             request_args = urlencode(args)
 
-        response = requests.get(url=request_url, auth=(self.username, self.password), headers=self.headers)
-        
+        response = requests.get(url=request_url,
+                                auth=(self.username, self.password),
+                                headers=self.headers)
+
         return response
