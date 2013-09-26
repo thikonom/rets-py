@@ -1,4 +1,5 @@
 import rets
+from rets.exceptions import RetsHTTPException
 
 import unittest
 
@@ -65,40 +66,33 @@ class RetsUnitTest(unittest.TestCase):
         httpretty.disable()
 
     def test_unauthorized_login(self):
-        mock_response = """
-            <RETS ReplyCode="0" ReplyText="Operation Successful">
-            <RETS-RESPONSE>
-            MemberName=Retspy
-            User=Retspy,0,Syndicator,Retspy
-            Broker=NA
-            MetadataVersion=1.00.00041
-            MetadataTimestamp=2013-08-09T21:36:19
-            MinMetadataTimestamp=2013-08-09T21:36:19
-            TimeoutSeconds=1800000
-            Action=/rets/action
-            GetMetadata=/rets/getMetadata
-            GetObject=/rets/getObject
-            Login=/rets/login
-            Logout=/rets/logout
-            X-PostObject=/rets/postObject
-            Search=/rets/search
-            X-Selector=/rets/selector
-            Update=/rets/update
-            </RETS-RESPONSE>
-            </RETS>
-            """
-
         httpretty.enable()
-        httpretty.register_uri(httpretty.GET, "http://www.wrongurl.com/rets/login", status=401)
+        httpretty.register_uri(httpretty.GET, "http://www.retserver.com/rets/login", 
+                               responses = [httpretty.Response(body='', status=401),
+                                            httpretty.Response(body='', status=401)])
 
         client = rets.Rets()
 
-        response = client.login("http://www.wrongurl.com/rets/login", self.username, self.password)
+        response = client.login("http://www.retserver.com/rets/login", self.username, self.password)
         self.assertEqual(response, False)
         self.assertEqual(client.capability_urls, {})
         self.assertEqual(client.server_info, {})
 
         httpretty.disable()
+
+    def test_unsuccessful_login(self):
+        httpretty.enable()
+        httpretty.register_uri(httpretty.GET, "http://www.retserver.com/rets/login", status=404)
+
+        client = rets.Rets()
+
+        with self.assertRaises(RetsHTTPException):
+            client.login("http://www.retserver.com/rets/login", self.username, self.password)
+            self.assertEqual(client.capability_urls, {})
+            self.assertEqual(client.server_info, {})
+
+        httpretty.disable()
+
 
 
 if __name__ == '__main__':

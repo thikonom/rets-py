@@ -1,3 +1,5 @@
+from .exceptions import RetsHTTPException
+
 def assert_successful_response(response, url):
     response_code = response.status_code
 
