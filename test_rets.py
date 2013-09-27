@@ -68,8 +68,8 @@ class RetsUnitTest(unittest.TestCase):
     def test_unauthorized_login(self):
         httpretty.enable()
         httpretty.register_uri(httpretty.GET, "http://www.retserver.com/rets/login", 
-                               responses = [httpretty.Response(body='', status=401),
-                                            httpretty.Response(body='', status=401)])
+                               responses = [httpretty.Response(body='404 Not Found', status=401),
+                                            httpretty.Response(body='404 Not Found', status=401)])
 
         client = rets.Rets()
 
