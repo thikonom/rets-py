@@ -79,14 +79,14 @@ class Rets(object):
         if self.use_basic_authentication:
             # try only basic authentication
             ba_req = copy.deepcopy(base_req)
-            self.reqs = [ba_req]
+            self.auth_methods = [ba_req]
         else:
             # try both basic and digest authentication
             ba_req = copy.deepcopy(base_req)
             ba_req.auth = HTTPBasicAuth(self.username, self.password)
             dg_req = copy.deepcopy(base_req)
             dg_req.auth = HTTPDigestAuth(self.username, self.password)
-            self.reqs = [ba_req, dg_req]
+            self.auth_methods = [ba_req, dg_req]
 
         response = self.dorequest(action)
 
@@ -157,7 +157,7 @@ class Rets(object):
             request_args = urlencode(kwargs)
             request_url = "?".join([request_url, request_args])
 
-        for req in self.reqs:
+        for req in self.auth_methods:
             req.url = request_url
             if self._last_response_cache.get('cookies'):
                 req.cookies = self._last_response_cache['cookies']
@@ -180,14 +180,24 @@ class Rets(object):
         return self.__logged_in
 
     @login_required
-    def get_server_information(self):
+    def get_system_metadata(self):
         metadata_url = self.capability_urls.get('GETMETADATA')
         assert metadata_url != '', 'No url for capability GetMetadata found'
 
-        response = self.dorequest(metadata_url, **{'Type': 'METADATA-SYSTEM',
-                                                    'ID': '0',
-                                                    'Format': 'STANDARD-XML'})
-        return response
+        req_params = {'Type': 'METADATA-SYSTEM',
+                      'ID': '0',
+                      'Format': 'STANDARD-XML'}
+
+        response = self.dorequest(metadata_url, **req_params)
+
+        system_metadata = {}
+        tree = etree.parse(StringIO(response.text))
+        root = tree.xpath('//System')
+        if root:
+            for element in root[0].iter('SystemID', 'SystemDescription', 'Comments', 'Version'):
+                system_metadata[element.tag] = element.text or ''
+
+        return system_metadata
 
     #def get_metadata(self, resource, klass):
     #    if not self.__logged_in:
