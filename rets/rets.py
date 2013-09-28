@@ -11,11 +11,6 @@ from .exceptions import RetsException
 from .utils import assert_successful_response, login_required
 
 
-_last_response_cache = {}
-_session = None
-
-def clear_cache():
-    _last_response_cache.clear()
 
 UA_AUTH_TYPE = ['USER_AGENT_AUTH_RETS_1_7', # RETS 1.7 user agent authorization.
                 'USER_AGENT_AUTH_INTEREALTY' # The Interealty variant of 1.7 user agent authorization.
@@ -54,14 +49,15 @@ class Rets(object):
         if headers:
             self.headers.update(headers)
         self.__logged_in = False
-
+        self._session = None
+        self._last_response_cache = {}
+        
     def login(self, login_url, username, password, ua_passwd=''):
         self.__logged_in = False
 
-        global _session
-        _session = None
+        self._session = None
 
-        clear_cache()
+        self._last_response_cache.clear()
 
         assert login_url != '',  'Login url cannot be empty'
         assert username != '',   'Username cannot be empty'
@@ -101,14 +97,14 @@ class Rets(object):
 
         assert_successful_response(response, login_url)
 
-        _last_response_cache.update(response.headers)
+        self._last_response_cache.update(response.headers)
 
         # update to last response header
-        detected_rets_version = _last_response_cache.get('rets-version')
+        detected_rets_version = self._last_response_cache.get('rets-version')
         if detected_rets_version:
             self.headers['RETS-Version'] = detected_rets_version
 
-        auth_support = _last_response_cache.get('www-authenticate')
+        auth_support = self._last_response_cache.get('www-authenticate')
         if auth_support:
             if 'Basic' in auth_support: 
                 self.auth_support_basic = True
@@ -163,19 +159,18 @@ class Rets(object):
 
         for req in self.reqs:
             req.url = request_url
-            if _last_response_cache.get('cookies'):
-                req.cookies = _last_response_cache['cookies']
+            if self._last_response_cache.get('cookies'):
+                req.cookies = self._last_response_cache['cookies']
             r = req.prepare()
 
-            global _session
-            if _session is None:
+            if self._session is None:
                 # if there is no existing session
-                _session = requests.Session()
-            response = _session.send(r)
+                self._session = requests.Session()
+            response = self._session.send(r)
 
             if response.status_code == 200: 
                 # save cookies for subsequent requests
-                _last_response_cache.setdefault('cookies', response.cookies)
+                self._last_response_cache.setdefault('cookies', response.cookies)
                 break
 
         return response
