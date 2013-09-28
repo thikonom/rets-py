@@ -12,6 +12,7 @@ from .utils import assert_successful_response, login_required
 
 
 _last_response_cache = {}
+_session = None
 
 def clear_cache():
     _last_response_cache.clear()
@@ -56,7 +57,11 @@ class Rets(object):
 
     def login(self, login_url, username, password, ua_passwd=''):
         self.__logged_in = False
-        self.session = None
+
+        global _session
+        _session = None
+
+        clear_cache()
 
         assert login_url != '',  'Login url cannot be empty'
         assert username != '',   'Username cannot be empty'
@@ -158,12 +163,19 @@ class Rets(object):
 
         for req in self.reqs:
             req.url = request_url
+            if _last_response_cache.get('cookies'):
+                req.cookies = _last_response_cache['cookies']
             r = req.prepare()
-            if self.session is None:
+
+            global _session
+            if _session is None:
                 # if there is no existing session
-                self.session = requests.Session()
-            response = self.session.send(r)
+                _session = requests.Session()
+            response = _session.send(r)
+
             if response.status_code == 200: 
+                # save cookies for subsequent requests
+                _last_response_cache.setdefault('cookies', response.cookies)
                 break
 
         return response
@@ -203,7 +215,3 @@ class Rets(object):
     #    metadata_url += urlencode({'Type': 'METADATA-LOOKUP_TYPE',
     #                               'ID': '',
     #                               'Format': 'STANDARD-XML'})
-
-    #    try:
-    #        response = requests.get(url=metadata_url, auth=(self.username, self.password), header=self.headers)
-    #    except Exception as e:
