@@ -51,7 +51,7 @@ class Rets(object):
         self.__logged_in = False
         self._session = None
         self._last_response_cache = {}
-        
+
     def login(self, login_url, username, password, ua_passwd=''):
         self.__logged_in = False
 
@@ -72,10 +72,11 @@ class Rets(object):
         self.password = password
 
         action = uri_portions.path
-        
-        base_req = requests.Request(method='GET', 
-                                   headers=self.headers)
-                             
+
+        base_req = requests.Request(
+            method='GET', headers=self.headers
+        )
+
         if self.use_basic_authentication:
             # try only basic authentication
             ba_req = copy.deepcopy(base_req)
@@ -106,7 +107,7 @@ class Rets(object):
 
         auth_support = self._last_response_cache.get('www-authenticate')
         if auth_support:
-            if 'Basic' in auth_support: 
+            if 'Basic' in auth_support:
                 self.auth_support_basic = True
             if 'Digest' in auth_support:
                 self.auth_support_digest = True
@@ -168,7 +169,7 @@ class Rets(object):
                 self._session = requests.Session()
             response = self._session.send(r)
 
-            if response.status_code == 200: 
+            if response.status_code == 200:
                 # save cookies for subsequent requests
                 self._last_response_cache.setdefault('cookies', response.cookies)
                 break
@@ -188,14 +189,36 @@ class Rets(object):
                       'ID': '0',
                       'Format': 'STANDARD-XML'}
 
+        system_metadata = {
+            'Version': '',
+            'SystemID': '',
+            'SystemDescription': '',
+            'TimeZoneOffset': '',
+            'Comments': ''
+        }
         response = self.dorequest(metadata_url, **req_params)
 
-        system_metadata = {}
         tree = etree.parse(StringIO(response.text))
-        root = tree.xpath('//System')
+        root = tree.xpath('//METADATA-SYSTEM')
+
         if root:
-            for element in root[0].iter('SystemID', 'SystemDescription', 'Comments', 'Version'):
-                system_metadata[element.tag] = element.text or ''
+            [root] = root
+            system_metadata['Version'] = root.get('Version', '')
+            for child in root.iterchildren():
+                if child.tag == 'System':
+                    # rets server has version < 1.5
+                    for cchild in child.iterchildren():
+                        if cchild.tag == 'SystemID':
+                            system_metadata['SystemID'] = cchild.text
+                        elif cchild.tag == 'SystemDescription':
+                            system_metadata['SystemDescription'] = cchild.text
+                elif child.tag == 'SYSTEM':
+                    # rets server has version > 1.5
+                    system_metadata['SystemID'] = child.get('SystemID', '')
+                    system_metadata['SystemDescription'] = child.get('SystemDescription', '')
+                    system_metadata['TimeZoneOffset'] = child.get('TimeZoneOffset', '')
+                elif child.tag == 'COMMENTS':
+                    system_metadata['Comments'] = child.text
 
         return system_metadata
 
