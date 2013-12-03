@@ -221,25 +221,3 @@ class Rets(object):
                     system_metadata['Comments'] = child.text
 
         return system_metadata
-
-    #def get_metadata(self, resource, klass):
-    #    if not self.__logged_in:
-    #        raise RetsException('You are not logged in')
-
-    #    metadata_url = self.capability_urls.get('GETMETADATA')
-    #    assert metadata_url, 'No url for capability GetMetadata found'
-
-    #    metadata_url += urlencode({'Type': 'METADATA-LOOKUP_TYPE',
-    #                               'ID': '',
-    #                               'Format': 'STANDARD-XML'})
-    #    return self.get_metadata_table(resource, klass)
-
-    #def get_metadata_table(self, resource, klass):
-
-    #    assert resource, 'Resource parameter is required in get_metadata() request'
-    #    assert klass, 'Class parameter is required in get_metadata() request'
-
-    #    metadata_url = self.capability_urls['GETMETADATA']
-    #    metadata_url += urlencode({'Type': 'METADATA-LOOKUP_TYPE',
-    #                               'ID': '',
-    #                               'Format': 'STANDARD-XML'})
